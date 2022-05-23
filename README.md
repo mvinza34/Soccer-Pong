@@ -4,3 +4,4 @@ This project is about using Pygame to build a soccer-like Pong game. The code is
 by Clear Code, and will be modified further as more updates are made. Credit for the paddle assets also goes to Clear Code. 
 
 
+Code to arrive tomorrow. Subject to change.
