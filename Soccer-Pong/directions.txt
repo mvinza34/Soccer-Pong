@@ -1,0 +1,1 @@
+Please place the assets and code from the repo in the "Soccer-Pong" folder as to avoid "FileNotFoundError" errors from occuring. :-)
