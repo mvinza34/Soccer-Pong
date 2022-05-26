@@ -42,12 +42,20 @@ class Ball(Block):
         self.paddles = paddles
         self.active = False
         self.score_time = 0
+	ball_1 = pygame.image.load(PROJECT_ROOT / "Soccer-Pong/football.png").convert_alpha()
+        ball_2 = pygame.image.load(PROJECT_ROOT / "Soccer-Pong/football2.png").convert_alpha()
+        ball_3 = pygame.image.load(PROJECT_ROOT / "Soccer-Pong/football3.png").convert_alpha()
+        ball_4 = pygame.image.load(PROJECT_ROOT / "Soccer-Pong/football4.png").convert_alpha()
+        self.ball_move = [ball_1, ball_2, ball_3, ball_4]
+        self.ball_index = 0
+        self.image = self.ball_move[self.ball_index]
     def update(self):
         if self.active:
             self.rect.x += self.speed_x
             self.rect.y += self.speed_y
             self.screen_constrain()
             self.collisions()
+	    self.animation_state()
         else:
             self.restart_counter()
     def collisions(self):
@@ -101,6 +109,10 @@ class Ball(Block):
         self.score_time = pygame.time.get_ticks()
         self.rect.center = (screen_width/2,screen_height/2)
         pygame.mixer.Sound.play(goal_sound)
+    def animation_state(self):
+        self.ball_index += 0.5
+        if self.ball_index >= len(self.ball_move): self.ball_index = 0
+        self.image = self.ball_move[int(self.ball_index)]
     def restart_counter(self):
         current_time = pygame.time.get_ticks()
         countdown_number = 3
@@ -149,6 +161,20 @@ class GameManager:
 
 		screen.blit(player_score,player_score_rect)
 		screen.blit(opponent_score,opponent_score_rect)
+	def title_screen(self):
+		screen.fill((0,130,0))
+
+		title_surf = game_font.render("Soccer-Pong",False,(255,255,255))
+		title_rect = title_surf.get_rect(center = (620,150))
+		screen.blit(title_surf,title_rect)
+
+		screen_ball = pygame.image.load(PROJECT_ROOT / "Soccer-Pong/soccer_ball.png").convert_alpha()
+		screen_ball_rect = screen_ball.get_rect(center = (625,500))
+		screen.blit(screen_ball,screen_ball_rect)
+
+		instruct_surf = game_font.render("Press [Space] to start.",False,(255,255,255))
+		instruct_rect = instruct_surf.get_rect(center = (620,850))
+		screen.blit(instruct_surf,instruct_rect)
 
 # This prevents "FileNotFoundError" errors from occuring
 PROJECT_ROOT = Path(__file__).parent.parent
@@ -195,41 +221,59 @@ ball_sprite.add(ball)
 pitch = pygame.image.load(PROJECT_ROOT / "Soccer-Pong/Field.png").convert_alpha()
 pitch = pygame.transform.scale(pitch,(screen_width,screen_height))
 
+# Game Functionality
 game_manager = GameManager(ball_sprite,paddle_group)
 game_active = False
+RUNNING, PAUSE = 0, 1
+state = RUNNING
     
 while True:
-	# Handling input
-	x,y = pygame.mouse.get_pos()
-	for event in pygame.event.get():
-		if event.type == pygame.QUIT:
-			pygame.quit()
-			sys.exit
-		if event.type == pygame.KEYDOWN:
-			if event.key == pygame.K_DOWN: player_goalie.movement += player_goalie.speed
-			if event.key == pygame.K_UP: player_goalie.movement -= player_goalie.speed
-		if event.type == pygame.KEYUP:
-			if event.key == pygame.K_DOWN: player_goalie.movement -= player_goalie.speed
-			if event.key == pygame.K_UP: player_goalie.movement += player_goalie.speed
-		if event.type == pygame.KEYDOWN:
-			if event.key == pygame.K_s: player_forward.movement += player_forward.speed
-			if event.key == pygame.K_w: player_forward.movement -= player_forward.speed
-		if event.type == pygame.KEYUP:
-			if event.key == pygame.K_s: player_forward.movement -= player_forward.speed
-			if event.key == pygame.K_w: player_forward.movement += player_forward.speed
-		if event.type == pygame.MOUSEBUTTONDOWN:
-			print(x,y)
+    # Handling input
+    for event in pygame.event.get():
+	if event.type == pygame.QUIT:
+            pygame.quit()
+            sys.exit
+	if game_active:
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_p: state = PAUSE
+                if event.key == pygame.K_s: state = RUNNING
+                if event.key == pygame.K_q: 
+                    pygame.quit()
+                    sys.exit
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_DOWN: player_goalie.movement += player_goalie.speed
+                if event.key == pygame.K_UP: player_goalie.movement -= player_goalie.speed
+            if event.type == pygame.KEYUP:
+                if event.key == pygame.K_DOWN: player_goalie.movement -= player_goalie.speed
+                if event.key == pygame.K_UP: player_goalie.movement += player_goalie.speed
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_x: player_forward.movement += player_forward.speed
+                if event.key == pygame.K_z: player_forward.movement -= player_forward.speed
+            if event.type == pygame.KEYUP:
+                if event.key == pygame.K_x: player_forward.movement -= player_forward.speed
+                if event.key == pygame.K_z: player_forward.movement += player_forward.speed
+         else:
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+                game_active = True
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_q:
+                pygame.quit()
+                sys.exit
+    if game_active and state == RUNNING:
+        # Visuals
+        # Generate the soccer pitch
+        screen.blit(pitch,(0,0))
+        ## goal
+        left_goal = pygame.draw.line(screen,(0,130,0),(0,320),(0,595),22)
+        right_goal = pygame.draw.line(screen,(0,130,0),(1280/1.05,320),(1280/1.05,595),22)
+        # Run the game
+        game_manager.run_game() 
+    elif state == PAUSE and game_active:
+        pause_surf = game_font.render("Game paused. Press [s] to continue or [q] to quit.",False,(0,0,0))
+        pause_rect = pause_surf.get_rect(center = (610,160))
+        screen.blit(pause_surf,pause_rect)
+    else:
+       game_manager.title_screen() 
 
-	# Visuals
-	# Generate the soccer pitch
-	screen.blit(pitch,(0,0))
-	## goal
-	left_goal = pygame.draw.line(screen,(0,130,0),(0,320),(0,595),22)
-	right_goal = pygame.draw.line(screen,(0,130,0),(1280/1.05,320),(1280/1.05,595),22)
-	
-	# Run the game
-	game_manager.run_game()
-
-	# Updating the window 
-	pygame.display.flip()
-	clock.tick(60)
+    # Updating the window 
+    pygame.display.flip()
+    clock.tick(60)
